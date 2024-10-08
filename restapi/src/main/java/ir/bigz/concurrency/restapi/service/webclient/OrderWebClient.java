@@ -1,6 +1,7 @@
 package ir.bigz.concurrency.restapi.service.webclient;
 
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,10 +18,19 @@ public class OrderWebClient {
                 .build();
     }
 
-    public Mono<String> getPrice(long orderId) {
-        WebClient.ResponseSpec retrieve = client.get()
+//    public Mono<String> getPrice(long orderId) {
+//        WebClient.ResponseSpec retrieve = client.get()
+//                .uri("/" + orderId)
+//                .accept(MediaType.APPLICATION_JSON).retrieve();
+//        return retrieve.bodyToMono(String.class);
+//    }
+
+    public Mono<ResponseEntity<String>> getPrice(long orderId) {
+        return client.get()
                 .uri("/" + orderId)
-                .accept(MediaType.APPLICATION_JSON).retrieve();
-        return retrieve.bodyToMono(String.class);
+                .accept(MediaType.APPLICATION_JSON).retrieve()
+                .onStatus(httpStatusCode -> !httpStatusCode.is2xxSuccessful(), clientResponse -> Mono.empty())
+                .toEntity(String.class)
+                .onErrorResume(ignore -> Mono.empty());
     }
 }

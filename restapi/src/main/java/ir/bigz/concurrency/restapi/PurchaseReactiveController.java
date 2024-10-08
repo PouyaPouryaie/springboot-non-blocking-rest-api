@@ -25,12 +25,13 @@ public class PurchaseReactiveController {
     }
 
     @GetMapping("/generateData")
-    public void purchaseWithGenerateData() {
+    public ResponseEntity<? extends Purchase> purchaseWithGenerateData() {
         Purchase purchase = TestUtils.generatePurchase();
         log.info("Purchase generated {}", purchase);
         long start = System.currentTimeMillis();
         purchaseService.updatePurchase(purchase);
         TestUtils.elapsedTime(log, start, purchase.getOrderId());
+        return ResponseEntity.ok(purchase);
     }
 
     @GetMapping("/failed")

@@ -6,6 +6,7 @@ import ir.bigz.concurrency.restapi.service.webclient.OrderWebClient;
 import ir.bigz.concurrency.restapi.service.webclient.PaymentWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -29,17 +30,37 @@ public class PurchaseReactiveService {
 
     public void updatePurchase(Purchase purchase) {
         log.info("Purchase Start orderId: [{}]", purchase.getOrderId());
+        var isFailed = false;
 
-        Mono<Payment> monoPayment = paymentService.getPayment(purchase.getOrderId());
-        Mono<String> monoOrder = orderService.getPrice(purchase.getOrderId());
-        Payment payment = monoPayment.block();
-        String price = monoOrder.block();
-        purchase.setPrice(price);
-        purchase.setPaymentId(Objects.requireNonNull(payment).paymentId());
-        purchase.setInvoiceNumber(payment.invoiceNumber());
+        Mono<ResponseEntity<Payment>> monoPayment = paymentService.getPayment(purchase.getOrderId());
+        Mono<ResponseEntity<String>> monoOrder = orderService.getPrice(purchase.getOrderId());
+        ResponseEntity<Payment> responsePayment = monoPayment.block();
 
-        log.info("Purchase Completed orderId: [{}] paymentId: [{}] paymentInvoiceNumber: [{}] price: [{}]",
-                purchase.getOrderId(), purchase.getPaymentId(), purchase.getInvoiceNumber(), purchase.getPrice());
+        if(Objects.nonNull(responsePayment) && responsePayment.getStatusCode().is2xxSuccessful()) {
+            purchase.setPaymentId(Objects.requireNonNull(responsePayment.getBody()).paymentId());
+            purchase.setInvoiceNumber(responsePayment.getBody().invoiceNumber());
+        } else {
+            failedPurchases.add(purchase);
+            isFailed = true;
+        }
+
+        ResponseEntity<String> responseOrder = monoOrder.block();
+
+        if(Objects.nonNull(responseOrder) && responseOrder.getStatusCode().is2xxSuccessful()) {
+            purchase.setPrice(Objects.requireNonNull(responseOrder.getBody()));
+        } else {
+            failedPurchases.add(purchase);
+            isFailed = true;
+        }
+
+        if(isFailed) {
+            log.info("Purchase Failed orderId: [{}] paymentId: [{}] paymentInvoiceNumber: [{}] price: [{}]",
+                    purchase.getOrderId(), purchase.getPaymentId(), purchase.getInvoiceNumber(), purchase.getPrice());
+        }else {
+            log.info("Purchase Completed orderId: [{}] paymentId: [{}] paymentInvoiceNumber: [{}] price: [{}]",
+                    purchase.getOrderId(), purchase.getPaymentId(), purchase.getInvoiceNumber(), purchase.getPrice());
+        }
+
     }
 
     public Set<Purchase> getFailedPurchaseList() {
