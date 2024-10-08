@@ -1,9 +1,11 @@
 package ir.bigz.concurrency.restapi.service.restclient;
 
 import ir.bigz.concurrency.restapi.dto.Payment;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Service
 public class PaymentRestClient {
@@ -17,11 +19,13 @@ public class PaymentRestClient {
     }
 
     public Payment getPayment(long orderId) {
-        Payment payment = client.get()
+        return client.get()
                 .uri("/" + orderId)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, ((request, response) -> {
+                    throw new RestClientException(response.getStatusText());
+                }))
                 .body(Payment.class);
-        return payment;
     }
 }

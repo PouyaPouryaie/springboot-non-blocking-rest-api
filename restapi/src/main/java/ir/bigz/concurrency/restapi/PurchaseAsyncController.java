@@ -1,16 +1,17 @@
 package ir.bigz.concurrency.restapi;
 
+import ir.bigz.concurrency.restapi.common.LogSection;
+import ir.bigz.concurrency.restapi.common.TestUtils;
 import ir.bigz.concurrency.restapi.dto.BatchPurchase;
 import ir.bigz.concurrency.restapi.dto.Purchase;
 import ir.bigz.concurrency.restapi.service.PurchaseAsyncService;
-import ir.bigz.concurrency.restapi.service.PurchaseService;
-import org.instancio.Instancio;
-import org.instancio.Select;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -27,49 +28,43 @@ public class PurchaseAsyncController {
     }
 
     @GetMapping("/generateData")
-    public void purchaseWithGenerateData() {
+    public ResponseEntity<Purchase> purchaseWithGenerateData() {
         Purchase purchase = TestUtils.generatePurchase();
         log.info("Purchase generated {}", purchase);
         long start = System.currentTimeMillis();
         purchaseAsyncService.updatePurchase(purchase);
-        elapsedTime(start, purchase.getOrderId());
+        TestUtils.elapsedTime(LogSection.ASYNC, log, start, purchase.getOrderId());
+        return ResponseEntity.ok(purchase);
     }
 
     @PostMapping
     public void purchase(@RequestBody Purchase purchase) {
         long start = System.currentTimeMillis();
         purchaseAsyncService.updatePurchase(purchase);
-        elapsedTime(start, purchase.getOrderId());
+        TestUtils.elapsedTime(LogSection.ASYNC, log, start, purchase.getOrderId());
     }
 
     @PostMapping("/batch")
     public void batchPurchase(@RequestBody BatchPurchase batchPurchase) {
         long start = System.currentTimeMillis();
         purchaseAsyncService.batchUpdatePurchase(batchPurchase);
-        elapsedTime(start);
+        TestUtils.elapsedTime(LogSection.ASYNC, log, start);
     }
 
     @PostMapping("/future/batch")
     public void batchPurchaseAtFuture(@RequestBody BatchPurchase batchPurchase) {
         long start = System.currentTimeMillis();
         purchaseAsyncService.updatePurchaseAtFuture(batchPurchase);
-        elapsedTime(start);
+        TestUtils.elapsedTime(LogSection.ASYNC, log, start);
     }
 
     @GetMapping("/failed")
     public ResponseEntity<?> failedPurchaseList() {
         Set<Purchase> failedPurchaseList = purchaseAsyncService.getFailedPurchaseList();
-        return ResponseEntity.ok(failedPurchaseList);
+        Map<String, Object> result = new HashMap<>();
+        result.put("result", failedPurchaseList);
+        result.put("size", failedPurchaseList.size());
+        return ResponseEntity.ok(result);
 
-    }
-
-    private void elapsedTime(long start, long orderId) {
-        long finish = System.currentTimeMillis();
-        log.info("### Async: orderId: [{}] The time is passed in {} ms",orderId, finish - start);
-    }
-
-    private void elapsedTime(long start) {
-        long finish = System.currentTimeMillis();
-        log.info("### Async: The time is passed in {} ms",finish - start);
     }
 }

@@ -1,8 +1,10 @@
 package ir.bigz.concurrency.restapi.service.restclient;
 
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Service
 public class OrderRestClient {
@@ -16,11 +18,13 @@ public class OrderRestClient {
     }
 
     public String getPrice(long orderId) {
-        String price = client.get()
+        return client.get()
                 .uri("/" + orderId)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, ((request, response) -> {
+                    throw new RestClientException(response.getStatusText());
+                }))
                 .body(String.class);
-        return price;
     }
 }

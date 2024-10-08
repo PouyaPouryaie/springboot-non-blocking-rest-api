@@ -1,5 +1,7 @@
 package ir.bigz.concurrency.restapi;
 
+import ir.bigz.concurrency.restapi.common.LogSection;
+import ir.bigz.concurrency.restapi.common.TestUtils;
 import ir.bigz.concurrency.restapi.dto.Purchase;
 import ir.bigz.concurrency.restapi.service.PurchaseReactiveService;
 import org.slf4j.Logger;
@@ -25,12 +27,12 @@ public class PurchaseReactiveController {
     }
 
     @GetMapping("/generateData")
-    public ResponseEntity<? extends Purchase> purchaseWithGenerateData() {
+    public ResponseEntity<Purchase> purchaseWithGenerateData() {
         Purchase purchase = TestUtils.generatePurchase();
         log.info("Purchase generated {}", purchase);
         long start = System.currentTimeMillis();
         purchaseService.updatePurchase(purchase);
-        TestUtils.elapsedTime(log, start, purchase.getOrderId());
+        TestUtils.elapsedTime(LogSection.REACTIVE, log, start, purchase.getOrderId());
         return ResponseEntity.ok(purchase);
     }
 

@@ -17,6 +17,9 @@ This project show how to use different apporach to implement non-blocking for re
 4. use webClient
    - I use web client to have non-blocking client to send the request
    - implement reactive approach to call endpoint and get data
+5. define own executor and use virtualThread
+   - Improve performance and reduce time for response
+   - Note: It's better to use chunked, I Implemented at `PurchaseAsyncService`
 
 ## Tool Set
 - `Apache Bench` is an open source load testing utility that comes bundled with the Apache web server.
@@ -29,3 +32,4 @@ ab -n 10000 -c 10 http://localhost:8080/actuator/metrics
 
 ## Useful Source
 - [Batch Processing of Stream Data in Java](https://www.baeldung.com/java-stream-batch-processing)
+- [CompletableFuture API](https://medium.com/@AlexanderObregon/javas-completablefuture-api-deep-dive-fecbdd78c07d)
