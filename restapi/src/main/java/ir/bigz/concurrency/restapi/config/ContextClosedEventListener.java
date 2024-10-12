@@ -6,7 +6,10 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class ContextClosedEventListener {
@@ -18,10 +21,32 @@ public class ContextClosedEventListener {
         this.executorService = executorService;
     }
 
+    /*
+        Implement graceful shutdown procedures for ExecutorServices
+        to ensure all tasks are completed before application termination
+     */
     @EventListener(ContextClosedEvent.class)
     public void onContextClosedEvent(ContextClosedEvent event) {
-        executorService.close();
-        executorService.shutdown();
-        log.info("ContextClosedEvent occurred at millis: {}", event.getTimestamp());
+
+        try {
+            executorService.close();
+            executorService.shutdown();
+            boolean tasksCompleted = executorService.awaitTermination(30, TimeUnit.SECONDS);
+            if (tasksCompleted) {
+                log.info("ContextClosedEvent: All tasks completed");
+            } else {
+                log.warn("ContextClosedEvent: Some tasks did not complete in 30 seconds, forcing shutdown");
+                executorService.shutdownNow();
+                executorService.awaitTermination(0, TimeUnit.SECONDS);
+            }
+        } catch (InterruptedException exception) {
+            log.warn("ContextClosedEvent: Interrupted while waiting for tasks to terminate", exception);
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        } finally {
+            LocalTime currentTime = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            log.info("ContextClosedEvent: executor is finished at: {}", currentTime.format(formatter));
+        }
     }
 }

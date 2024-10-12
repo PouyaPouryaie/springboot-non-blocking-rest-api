@@ -28,9 +28,9 @@ public class TestUtils {
     public static void elapsedTime(LogSection logSection, Logger log, long start, long orderId) {
         long finish = System.currentTimeMillis();
         if(orderId == 0) {
-            log.info("### {}: BATCH: The time is passed in {} ms",logSection.getLogName(), finish - start);
+            log.info("### {}: BATCH: The time is passed in {} s",logSection.getLogName(), (finish - start) / 1000);
         }else {
-            log.info("### {}: orderId: [{}] The time is passed in {} ms",logSection.getLogName() ,orderId, finish - start);
+            log.info("### {}: orderId: [{}] The time is passed in {} s",logSection.getLogName() ,orderId, (finish - start) / 1000);
         }
     }
 }
